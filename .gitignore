@@ -1,0 +1,89 @@
+# ==============================================================
+#  Tomodachi Collection · Emulador web Nintendo DS (EmulatorJS)
+# ==============================================================
+
+# --------------------------------------------------------------
+#  ROMs de Nintendo DS
+#  - La ROM CRUDA (.nds, 64 MiB) NO se versiona: pesa demasiado
+#    y su distribución no corresponde a este proyecto.
+#  - La ROM COMPRIMIDA sí se versiona: tomodachi.rar pesa
+#    38.313.896 bytes (36,5 MiB), muy por debajo del límite
+#    de 100 MB por archivo de GitHub.
+# --------------------------------------------------------------
+*.nds
+*.dsi
+*.gba
+
+# Excepción explícita: los archivos comprimidos de la ROM sí se suben.
+# (Si preferís .zip, renombrá el archivo y actualizá EJS_gameUrl.)
+!*.rar
+!*.zip
+!/tomodachi.rar
+!/tomodachi.zip
+
+# --------------------------------------------------------------
+#  Partidas guardadas, estados y cachés del emulador
+# --------------------------------------------------------------
+*.sav
+*.srm
+*.ss
+*.state
+*.rtc
+*.fs
+saves/
+save-states/
+.ejs-cache/
+
+# --------------------------------------------------------------
+#  EmulatorJS auto-alojado (cores + carpeta data/)  -- opcional
+#  Si se descargan los cores de EmulatorJS dentro del proyecto,
+#  no deben subirse: ocupan cientos de MB.
+# --------------------------------------------------------------
+data/
+!data/.gitkeep
+
+# --------------------------------------------------------------
+#  Sistema operativo y editores
+# --------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+*.lnk
+*.tmp
+*.temp
+*.bak
+*.old
+*.swp
+*~
+.vscode/
+.idea/
+
+# --------------------------------------------------------------
+#  Servidor local / Apache / XAMPP / PHP
+# --------------------------------------------------------------
+*.log
+logs/
+error.log
+access.log
+.htpasswd
+httpd.conf
+php.ini
+.env
+.env.*
+!.env.example
+
+# --------------------------------------------------------------
+#  Node.js / builds (por si se compila el core localmente)
+# --------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+dist/
+build/

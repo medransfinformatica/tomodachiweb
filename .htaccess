@@ -1,0 +1,95 @@
+# =============================================================
+#  EmulatorJS / Nintendo DS
+#  Configuracion compatible con Apache de XAMPP y con hosting
+#  compartido tipo InfinityFree (todas las directivas estan
+#  protegidas con <IfModule> para que nunca devuelvan HTTP 500
+#  si el servidor tiene modulos deshabilitados).
+#
+#  Ubicacion: D:\XAMPP\htdocs\tomodachiweb\.htaccess
+# =============================================================
+
+# --- Pagina de inicio por defecto -----------------------------
+DirectoryIndex index.html
+
+# --- No listar el contenido de las carpetas -------------------
+# (protegido: si mod_autoindex no esta activo, no hace nada)
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# --- Tipos MIME -------------------------------------------------
+# Apache no conoce las extensiones .nds ni .wasm: las registramos aqui.
+<IfModule mod_mime.c>
+    # ROMs de Nintendo DS
+    # El emulador la descarga con fetch/XHR y la procesa como ArrayBuffer,
+    # por lo que application/octet-stream es el tipo correcto.
+    AddType application/octet-stream .nds
+    AddType application/octet-stream .dsi
+    AddType application/octet-stream .gba
+
+    # Comprimidos (por si se cambia la ROM por un .zip / .rar)
+    AddType application/zip .zip
+    AddType application/x-rar-compressed .rar
+
+    # WebAssembly: obligatorio si auto-alojas los cores de EmulatorJS
+    # dentro de la carpeta /data/ en vez de usar el CDN oficial.
+    AddType application/wasm .wasm
+
+    # Tipos estandar (por si el httpd.conf global esta incompleto)
+    AddType text/html .html
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType application/json .json
+</IfModule>
+
+# --- Compresion: NO comprimir las ROMs -------------------------
+# Evita que un .nds comprimido se descargue corrupto o que el
+# emulador reciba datos con un Content-Encoding inesperado.
+# SetEnvIfNoCase pertenece a mod_setenvif (no a mod_deflate).
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase Request_URI "\.(nds|dsi|gba)$" no-gzip dont-vary
+</IfModule>
+
+# --- Cache de la ROM y de los assets ----------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType application/octet-stream "access plus 7 days"
+    ExpiresByType text/html             "access plus 0 seconds"
+</IfModule>
+
+# --- CORS / cabeceras ------------------------------------------
+# La ROM se carga desde el MISMO origen (localhost, InfinityFree o
+# Render), por lo que CORS no es necesario para jugar. Estas cabeceras
+# solo hacen falta si sirves la ROM en otro servidor/puerto (por
+# ejemplo en GitHub Releases o un CDN) y la pagina se abre en otro host.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(nds|dsi|gba|wasm|data|zip|rar)$">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+        Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept"
+    </FilesMatch>
+
+    # --- Threads / SharedArrayBuffer (OPCIONAL) -----------------
+    # Activa estas dos lineas SOLO si auto-alojas TODO (cores incluidos)
+    # en tu propio servidor. Con el CDN oficial tambien funciona, porque
+    # cdn.emulatorjs.org envia 'Access-Control-Allow-Origin: *' y
+    # 'Cross-Origin-Resource-Policy: cross-origin'.
+    # Requiere que mod_headers este cargado y que httpd.conf tenga
+    # AllowOverride All para tu carpeta.
+    #
+    # Header always set Cross-Origin-Opener-Policy   "same-origin"
+    # Header always set Cross-Origin-Embedder-Policy "require-corp"
+</IfModule>
+
+# --- Evitar que se listen backups/editorfiles ------------------
+# "Require" es de Apache 2.4 (mod_authz_core); en Apache 2.2 se usa
+# "Deny from all". Ambos van protegidos para no provocar error 500.
+<FilesMatch "^\.(htaccess|htpasswd|env|ini|log|git).*$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

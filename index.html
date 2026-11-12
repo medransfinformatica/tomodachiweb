@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+
+<!-- Viewport fluido + sin zoom por doble tap ni por pellizco.
+     viewport-fit=cover permite usar todo el lienzo en pantallas con notch. -->
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#05070d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Emulador web Nintendo DS (EmulatorJS) a pantalla completa con la ROM local de Tomodachi Collection servida por Apache/XAMPP.">
+
+<title>Tomodachi Collection · Emulador Nintendo DS</title>
+
+<style>
+  :root{
+    --bg:#05070d;
+    --text:#e7eefc;
+    --muted:#8ea0bf;
+    --accent:#38bdf8;
+    --accent-2:#a855f7;
+    --hud-bg:rgba(8,12,22,.55);
+    --line:rgba(120,150,200,.22);
+  }
+
+  *{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ---------- Página: 100% de la pantalla, sin scroll ni márgenes ---------- */
+  html,body{
+    width:100%;
+    height:100%;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden;               /* sin barras de desplazamiento */
+    overscroll-behavior:none;      /* sin pull-to-refresh / rubber banding */
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    text-size-adjust:100%;
+    -webkit-text-size-adjust:100%;
+    touch-action:manipulation;      /* sin zoom por doble tap */
+  }
+
+  body{
+    position:fixed;                 /* bloquea el rebote del scroll en iOS */
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+
+  /* ---------- Contenedor principal del emulador ---------- */
+  #game-container{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    height:100dvh;                  /* altura real visible en móviles (sin barra del navegador) */
+    max-width:100%;
+    max-height:100%;
+    overflow:hidden;
+    background:var(--bg);
+    touch-action:none;              /* los gestos táctiles van al emulador, no a la página */
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  /* Elemento que EmulatorJS usa como player (#game) */
+  #game{
+    width:100%;
+    height:100%;
+    display:block;
+  }
+
+  /* Estructura interna de EmulatorJS: #game > .ejs_canvas_parent > canvas.ejs_canvas
+     La forcemos a ocupar todo el contenedor y a centrar el juego, para que el
+     núcleo nunca quede pegado a una esquina ni se corte por abajo. */
+  #game .ejs_canvas_parent{
+    position:absolute !important;
+    inset:0;
+    width:100% !important;
+    height:100% !important;
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg);
+  }
+
+  /* Canvas del núcleo: se estira al 100% pero conserva la proporción real
+     de la DS (object-fit: contain = letterbox, sin deformar la imagen). */
+  #game canvas.ejs_canvas{
+    width:100% !important;
+    height:100% !important;
+    object-fit:contain;
+    background:var(--bg);
+    display:block;
+    /* Descomentar para el look retro "píxel perfecto":
+       image-rendering:pixelated; */
+  }
+
+  /* Si EJS_mouse = false, el canvas deja de recibir puntero */
+  #game-container.no-mouse #game canvas{
+    pointer-events:none;
+  }
+
+  /* ---------- HUD (no ocupa layout ni bloquea toques) ---------- */
+  .hud{
+    position:fixed;
+    z-index:20;
+    pointer-events:none;
+    user-select:none;
+  }
+
+  .hud-top{
+    top:calc(env(safe-area-inset-top, 0px) + 8px);
+    left:calc(env(safe-area-inset-left, 0px) + 8px);
+    right:calc(env(safe-area-inset-right, 0px) + 8px);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:5px 10px;
+    font-size:.72rem;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--text);
+    background:var(--hud-bg);
+    border:1px solid var(--line);
+    border-radius:999px;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+  }
+  .badge b{
+    font-weight:700;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+
+  .hud-bottom{
+    left:50%;
+    transform:translateX(-50%);
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 72px);
+    max-width:min(92vw, 760px);
+    padding:6px 12px;
+    font-size:.7rem;
+    color:var(--muted);
+    text-align:center;
+    background:var(--hud-bg);
+    border:1px solid var(--line);
+    border-radius:999px;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    opacity:.85;
+  }
+  .hud-bottom kbd{
+    background:#111a2c;
+    border:1px solid var(--line);
+    border-bottom-width:2px;
+    border-radius:5px;
+    padding:0 5px;
+    font-family:Consolas,monospace;
+    color:var(--accent);
+  }
+
+  /* ---------- Botón de pantalla completa ---------- */
+  #fs-button{
+    position:fixed;
+    z-index:30;
+    top:calc(env(safe-area-inset-top, 0px) + 10px);
+    right:calc(env(safe-area-inset-right, 0px) + 10px);
+    width:40px;
+    height:40px;
+    display:grid;
+    place-items:center;
+    padding:0;
+    font-size:1.1rem;
+    line-height:1;
+    color:var(--text);
+    background:var(--hud-bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    cursor:pointer;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    touch-action:manipulation;
+  }
+  #fs-button:active{ transform:scale(.94); }
+  #fs-button[hidden]{ display:none !important; }
+
+  /* En modo pantalla completa el HUD se oculta un poco para no molestar */
+  #game-container:fullscreen .hud-bottom,
+  #game-container:-webkit-full-screen .hud-bottom{ opacity:0; transition:opacity .4s ease; }
+  #game-container:fullscreen #fs-button,
+  #game-container:-webkit-full-screen #fs-button{ display:none !important; }
+
+  /* ---------- Ajustes por tipo de dispositivo ---------- */
+  @media (max-width:820px), (pointer:coarse){
+    .hud-bottom{ display:none; }         /* en móvil la barra de EmulatorJS ya ocupa el pie */
+    .badge{ font-size:.65rem; padding:4px 9px; }
+  }
+
+  @media (orientation:portrait) and (max-width:820px){
+    .hud-bottom{ display:block; bottom:calc(env(safe-area-inset-bottom, 0px) + 96px); }
+  }
+
+  /* Landscape en móviles: se compacta el HUD para no tapar la pantalla */
+  @media (orientation:landscape) and (pointer:coarse){
+    .hud-bottom{ display:none; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- Contenedor a pantalla completa: 100% x 100%, sin scroll -->
+<div id="game-container">
+  <div id="game"></div>
+
+  <div class="hud hud-top">
+    <span class="badge"><b>Tomodachi Collection</b> · Nintendo DS · core nds</span>
+  </div>
+
+  <div class="hud hud-bottom">
+    <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> mover · <kbd>X</kbd> A · <kbd>Z</kbd> B ·
+    <kbd>Enter</kbd> START · <kbd>Shift</kbd> SELECT
+  </div>
+</div>
+
+<button id="fs-button" type="button" title="Pantalla completa" aria-label="Pantalla completa" hidden>⛶</button>
+
+<script>
+  /* ================================================================
+     1) CONFIGURACIÓN OFICIAL DE EMULATORJS
+     (debe ejecutarse ANTES de cargar loader.js)
+     Docs: https://emulatorjs.org/docs/options
+     ================================================================ */
+
+  /* Contenedor dentro del player de EmulatorJS */
+  window.EJS_player = '#game';
+
+  /* Sistema / core: 'nds' = melonDS (alternativas: 'desmume', 'desmume2015') */
+  window.EJS_core = 'nds';
+
+  /* ROM local servida por el servidor web (mismo origen => sin CORS).
+     Ahora la ROM va CRUDA (sin comprimir): EmulatorJS la carga tal cual
+     con fetch/XHR y la pasa directo al núcleo, sin descomprimir en el
+     navegador. Extensiones comprimidas (.zip / .rar / .7z) también
+     funcionan: en ese caso el navegador las descomprime solo. */
+  window.EJS_gameUrl = 'tomodachi.nds';
+
+  /* Cores y assets desde el CDN oficial */
+  window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+
+  /* Metadatos del juego */
+  window.EJS_gameName = 'Tomodachi Collection';
+  window.EJS_gameID   = 3873;
+
+  /* Mapeo de botones estilo DS: A/B/X/Y, L/R, SELECT/START */
+  window.EJS_controlScheme = 'nds';
+
+  /* Interfaz en español */
+  window.EJS_language = 'es-ES';
+
+  /* Apariencia */
+  window.EJS_color           = '#38bdf8';
+  window.EJS_backgroundColor = '#05070d';
+  window.EJS_alignStartButton= 'center';
+  window.EJS_volume          = 0.7;
+
+  /* Comportamiento */
+  window.EJS_startOnLoaded     = false;  /* el audio necesita un gesto del usuario */
+  window.EJS_fullscreenOnLoaded= false;  /* opción oficial; requiere gesto del usuario */
+  window.EJS_askBeforeExit     = false;
+  window.EJS_noAutoFocus       = false;  /* el teclado debe poder entrar al emulador */
+  window.EJS_cacheConfig = { enabled:true, cacheMaxSizeMB:2048, cacheMaxAgeMins:10080 };
+
+  /* ------------------------------------------------------------
+     Opciones del núcleo (retroarch): melonDS
+     'melonds_screen_layout' define cómo se acomodan las dos pantallas
+     de la DS. Con "Left/Right" (una al lado de la otra) el juego ocupa
+     todo el ancho de la pantalla en monitores apaisados, en vez de
+     dejar ~55% de la ventana en negro. El usuario puede cambiarlo en
+     Ajustes → Backend Core Options; esa elección se guarda en
+     localStorage y se vuelve a aplicar en la próxima visita.
+     ------------------------------------------------------------ */
+  var LAYOUT_KEY    = 'tomodachiweb.screen_layout';
+  var LAYOUT_DEFAULT= 'Left/Right';
+
+  function savedLayout(){
+    try {
+      return localStorage.getItem(LAYOUT_KEY) || LAYOUT_DEFAULT;
+    } catch(e){ return LAYOUT_DEFAULT; }
+  }
+
+  window.EJS_defaultOptions = {
+    'melonds_screen_layout': savedLayout()
+  };
+
+  /* ================================================================
+     2) CAPA DE PÁGINA (variables propias solicitadas)
+     ------------------------------------------------------------
+     OJO: EmulatorJS NO define EJS_mouse / EJS_touch / EJS_fullscreen
+     (su loader solo lee un listado fijo de window.EJS_*).
+     Por eso estas tres flags se implementan acá como una capa propia
+     que realmente controla el comportamiento de la página:
+       EJS_mouse      -> puntero/mouse sobre el canvas
+       EJS_touch      -> gamepad virtual + gestos táctiles en el móvil
+       EJS_fullscreen -> botón ⛶ + pantalla completa automática
+     ================================================================ */
+  window.EJS_mouse      = true;  /* puntero/mouse sobre el canvas */
+  window.EJS_touch      = true;  /* controles táctiles + gamepad virtual */
+  window.EJS_fullscreen = true;  /* pantalla completa (API + botón + auto en móvil) */
+
+  (function pageLayer(){
+    var container = document.getElementById('game-container');
+    var game      = document.getElementById('game');
+    var fsButton  = document.getElementById('fs-button');
+
+    /* ---------- Detección de dispositivo táctil ---------- */
+    function isTouchDevice(){
+      if (window.EJS_touch === false) return false;
+      return ('ontouchstart' in window) ||
+             (navigator.maxTouchPoints > 0) ||
+             window.matchMedia('(pointer: coarse)').matches;
+    }
+
+    function isMobileLike(){
+      return isTouchDevice() ||
+             window.matchMedia('(max-width: 820px)').matches;
+    }
+
+    /* ---------- Flag EJS_mouse ---------- */
+    function applyMouseFlag(){
+      container.classList.toggle('no-mouse', window.EJS_mouse === false);
+    }
+    applyMouseFlag();
+
+    /* ---------- Flag EJS_touch: fuerza el gamepad virtual ---------- */
+    function ensureGamepadVisible(){
+      var emu = window.EJS_emulator;
+      if (!emu || !emu.virtualGamepad) return;
+      emu.touch = true;
+      /* el core expone toggleVirtualGamepad(bool); si no existe, se
+         hace el cambio manual sobre el estilo del contenedor */
+      if (typeof emu.toggleVirtualGamepad === 'function'){
+        emu.toggleVirtualGamepad(true);
+      } else {
+        emu.virtualGamepad.style.display = '';
+      }
+    }
+
+    function enableTouchControls(){
+      if (!isTouchDevice() || !window.EJS_emulator) return;
+      ensureGamepadVisible();
+      /* EmulatorJS oculta el gamepad virtual 250 ms después de cada
+         resize (lo usa para medirlo). Hay que re-afirmar su visibilidad
+         o en los phones el mando en pantalla desaparece al arrancar. */
+      [120, 400, 900].forEach(function(ms){
+        setTimeout(function(){
+          if (isTouchDevice() && window.EJS_emulator) ensureGamepadVisible();
+        }, ms);
+      });
+    }
+
+    /* ---------- Layout de pantallas de melonDS ---------- */
+    var layoutApplied = false;
+
+    function applyScreenLayout(){
+      if (layoutApplied) return;
+      var emu = window.EJS_emulator;
+      if (!emu || !emu.gameManager) return;
+      var wanted = savedLayout();
+      try {
+        var raw = emu.gameManager.getCoreOptions();
+        if (!raw) return;                    /* el core todavía no está listo */
+        var line = raw.split('\n').filter(function(l){ return l.indexOf('melonds_screen_layout') === 0; })[0];
+        if (!line) return;
+        var current = line.split(';')[0].split('|')[1];
+        if (current !== wanted){
+          emu.gameManager.setVariable('melonds_screen_layout', wanted);
+        }
+        layoutApplied = true;
+
+        /* Si el usuario cambia el layout desde el menú de Ajustes,
+           guardamos su elección para la próxima visita. */
+        var gm = emu.gameManager;
+        if (!gm.__layoutHooked){
+          gm.__layoutHooked = true;
+          var original = gm.setVariable.bind(gm);
+          gm.setVariable = function(key, value){
+            if (key === 'melonds_screen_layout'){
+              try { localStorage.setItem(LAYOUT_KEY, value); } catch(e){}
+            }
+            return original(key, value);
+          };
+        }
+      } catch(e){}
+    }
+
+    /* ---------- Flag EJS_fullscreen ---------- */
+    function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement; }
+
+    function requestFullscreen(){
+      var el = container;
+      var fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (fn){ try { fn.call(el); } catch(e){} }
+    }
+
+    function exitFullscreen(){
+      var fn = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (fn){ try { fn.call(document); } catch(e){} }
+    }
+
+    function toggleFullscreen(){
+      if (fsElement()){ exitFullscreen(); } else { requestFullscreen(); }
+    }
+
+    /* Bloquea la rotación a horizontal (solo funciona en fullscreen y en
+       navegadores que lo soportan: se ignora silenciosamente en el resto) */
+    function lockLandscape(){
+      try {
+        if (screen.orientation && screen.orientation.lock && isMobileLike()){
+          screen.orientation.lock('landscape').catch(function(){});
+        }
+      } catch(e){}
+    }
+
+    function syncFullscreenUI(){
+      var active = !!fsElement();
+      fsButton.hidden = !window.EJS_fullscreen || active;
+      /* Al entrar en pantalla completa intentamos bloquear horizontal
+         (solo funciona en algunos Android; se ignora en el resto) */
+      if (active){ lockLandscape(); }
+    }
+
+    if (window.EJS_fullscreen){
+      fsButton.hidden = false;
+      fsButton.addEventListener('click', function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        toggleFullscreen();
+      });
+      document.addEventListener('fullscreenchange', syncFullscreenUI);
+      document.addEventListener('webkitfullscreenchange', syncFullscreenUI);
+    }
+
+    /* En móvil, el primer toque en el emulador pasa a pantalla completa.
+       La llamada es SINCRÓNICA para conservar la "user activation":
+       Safari iOS rechaza requestFullscreen dentro de un setTimeout. */
+    var fsRequested = false;
+    function maybeFullscreen(){
+      if (!window.EJS_fullscreen || fsRequested || !isMobileLike() || fsElement()) return;
+      fsRequested = true;
+      requestFullscreen();
+    }
+    game.addEventListener('touchend', maybeFullscreen, { passive:true, once:true });
+    game.addEventListener('click', maybeFullscreen, { once:true });
+
+    /* ---------- Rotación / redimensionado ---------- */
+    function onViewportChange(){
+      /* EmulatorJS recalcula el layout solo; nosotros refrescamos el HUD */
+      if (window.EJS_emulator && typeof window.EJS_emulator.handleResize === 'function'){
+        try { window.EJS_emulator.handleResize(); } catch(e){}
+      }
+      /* tras el resize el core vuelve a ocultar el gamepad 250 ms después */
+      if (isTouchDevice()){ setTimeout(ensureGamepadVisible, 320); }
+    }
+    window.addEventListener('resize', onViewportChange, { passive:true });
+    window.addEventListener('orientationchange', function(){
+      setTimeout(onViewportChange, 250);
+    }, { passive:true });
+
+    /* Evita el zoom por doble toque dentro del emulador */
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, { passive:false });
+    var lastTouch = 0;
+    document.addEventListener('touchend', function(e){
+      var now = Date.now();
+      if (now - lastTouch < 320){ e.preventDefault(); }
+      lastTouch = now;
+    }, { passive:false });
+
+    /* ---------- Callbacks de EmulatorJS ---------- */
+    window.EJS_ready = function(){
+      console.log('[EmulatorJS] listo');
+      enableTouchControls();
+      syncFullscreenUI();
+      applyScreenLayout();
+    };
+    window.EJS_onGameStart = function(){
+      console.log('[EmulatorJS] juego iniciado');
+      enableTouchControls();
+      applyScreenLayout();
+    };
+    window.EJS_onExit = function(){ console.log('[EmulatorJS] emulador cerrado'); };
+
+    /* El core puede terminar de arrancar un poco después del evento
+       "ready": reintentamos unas pocas veces por si el layout no aplicó. */
+    var layoutTries = 0;
+    var layoutTimer = setInterval(function(){
+      if (layoutApplied){ clearInterval(layoutTimer); return; }
+      applyScreenLayout();
+      if (++layoutTries > 40) clearInterval(layoutTimer);
+    }, 500);
+
+    /* Expuesto para depurar desde la consola */
+    window.TomodachiUI = {
+      toggleFullscreen: toggleFullscreen,
+      isFullscreen: fsElement,
+      isTouchDevice: isTouchDevice,
+      enableTouchControls: enableTouchControls,
+      applyScreenLayout: applyScreenLayout
+    };
+  })();
+</script>
+
+<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+
+</body>
+</html>
