@@ -49,6 +49,7 @@ detecta la firma del archivo y lo descomprime solo en un *Web Worker*.
 tomodachiweb/
 ├── index.html            # EmulatorJS + CSS responsivo a pantalla completa
 ├── rom.php               # proxy PHP que sirve la ROM (hosting compartido)
+├── diagnostico.ps1       # script que revisa si el hosting sirve la ROM
 ├── .htaccess             # MIME types (.nds / .wasm) y cabeceras CORS
 ├── .gitignore            # ignora las ROMs (*.nds) y archivos temporales
 ├── README.md
@@ -262,6 +263,18 @@ Motivos habituales en InfinityFree:
 | **Tiempo de espera** | Transferir 64 MiB por un hosting compartido puede cortarse |
 
 ### 8.2 Cómo diagnosticarlo en 20 segundos
+
+**Opción rápida — script automático** (incluido en el repo):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\diagnostico.ps1 -Url "https://TU-SITIO.great-site.net"
+```
+
+El script comprueba el `index.html`, la ROM estática y `rom.php`, y te dice
+exactamente qué corregir. agregá `-Descargar` para además bajar la ROM y
+comparar el SHA256 con el archivo local.
+
+**Opción manual:**
 
 1. Abrí en el navegador: `https://TU-SITIO/tomodachi.nds`
 2. O usá PowerShell (reemplazá la URL):
