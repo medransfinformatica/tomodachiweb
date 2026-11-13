@@ -6,9 +6,9 @@
 #  ROMs de Nintendo DS
 #  - La ROM CRUDA (.nds, 64 MiB) NO se versiona: pesa demasiado
 #    y su distribución no corresponde a este proyecto.
-#  - La ROM COMPRIMIDA sí se versiona: tomodachi.rar pesa
-#    38.313.896 bytes (36,5 MiB), muy por debajo del límite
-#    de 100 MB por archivo de GitHub.
+#  - La ROM COMPRIMIDA sí se puede versionar: un .rar de la ROM
+#    ronda los 36,5 MiB, muy por debajo del límite de 100 MB
+#    por archivo de GitHub.
 # --------------------------------------------------------------
 *.nds
 *.dsi

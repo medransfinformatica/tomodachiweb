@@ -1,12 +1,12 @@
-﻿# Tomodachi Collection Â· Emulador web de Nintendo DS
+# Tomodachi Collection · Emulador web de Nintendo DS
 
 Emulador de **Nintendo DS** dentro del navegador basado en [EmulatorJS](https://emulatorjs.org/)
 (RetroArch compilado a WebAssembly), servido por **Apache de XAMPP** en local y desplegable
 como **Static Site en Render**.
 
 - URL local: <http://localhost/tomodachiweb/>
-- NÃºcleo usado: `nds` â†’ **melonDS** (alternativas: `desmume`, `desmume2015`)
-- ROM: **`tomodachi.nds`** (64 MiB) â€” se carga **cruda**, sin descomprimir
+- Núcleo usado: `nds` → **melonDS** (alternativas: `desmume`, `desmume2015`)
+- ROM: **`tomodachi.nds`** (64 MiB) — se carga **cruda**, sin descomprimir
   (ver [La ROM](#1-la-rom))
 
 ---
@@ -17,10 +17,10 @@ como **Static Site en Render**.
 |---|---|
 | Servidor local | Apache de XAMPP (o cualquier servidor HTTP) en el puerto `80` |
 | Navegador | Chrome, Edge o Firefox actualizados (WebAssembly + WebGL2) |
-| ROM | `tomodachi.rar` (ya incluido) o tu propio `.nds` comprimido |
-| Core | Se descarga automÃ¡ticamente desde el CDN oficial de EmulatorJS |
+| ROM | `tomodachi.nds` (64 MiB, incluida en el proyecto) |
+| Core | Se descarga automáticamente desde el CDN oficial de EmulatorJS |
 
-> No hace falta Node.js ni compilar nada: el HTML carga el nÃºcleo desde
+> No hace falta Node.js ni compilar nada: el HTML carga el núcleo desde
 > `https://cdn.emulatorjs.org/stable/data/`.
 
 ---
@@ -30,15 +30,15 @@ como **Static Site en Render**.
 ### 1.1 Formato
 
 `EJS_gameUrl` apunta a `tomodachi.nds`, la ROM **cruda**. El emulador la baja con
-`fetch` â†’ `ArrayBuffer` y la entrega tal cual al nÃºcleo melonDS: **no hace falta
+`fetch` → `ArrayBuffer` y la entrega tal cual al núcleo melonDS: **no hace falta
 descomprimir nada en el navegador**.
 
-Si en algÃºn momento preferÃ­s un archivo comprimido, EmulatorJS tambiÃ©n lo soporta:
+Si en algún momento preferís un archivo comprimido, EmulatorJS también lo soporta:
 detecta la firma del archivo y lo descomprime solo en un *Web Worker*.
 
-| Formato | MÃ³dulo que usa EmulatorJS (servido por el CDN) |
+| Formato | Módulo que usa EmulatorJS (servido por el CDN) |
 |---|---|
-| `.nds` (crudo) | â€” se entrega directo al nÃºcleo |
+| `.nds` (crudo) | — se entrega directo al núcleo |
 | `.rar` (RAR4/RAR5) | `compression/libunrar.js` + `compression/libunrar.wasm` |
 | `.zip` | `compression/extractzip.js` |
 | `.7z` | `compression/extract7z.js` |
@@ -47,28 +47,29 @@ detecta la firma del archivo y lo descomprime solo en un *Web Worker*.
 
 ```
 tomodachiweb/
-â”œâ”€â”€ index.html            # EmulatorJS + CSS responsivo a pantalla completa
-â”œâ”€â”€ .htaccess             # MIME types (.nds / .wasm) y cabeceras CORS
-â”œâ”€â”€ .gitignore            # ignora las ROMs (*.nds) y archivos temporales
-â”œâ”€â”€ README.md
-â””â”€â”€ tomodachi.nds         # LA ROM cruda (64 MiB)
+├── index.html            # EmulatorJS + CSS responsivo a pantalla completa
+├── rom.php               # proxy PHP que sirve la ROM (hosting compartido)
+├── .htaccess             # MIME types (.nds / .wasm) y cabeceras CORS
+├── .gitignore            # ignora las ROMs (*.nds) y archivos temporales
+├── README.md
+└── tomodachi.nds         # LA ROM cruda (64 MiB)
 ```
 
 ### 1.3 Usar tu propia ROM
 
-1. PonÃ© tu `.nds` en la carpeta del proyecto.
-2. Si lo llamÃ¡s distinto, actualizÃ¡ **una sola lÃ­nea** de `index.html`:
+1. Poné tu `.nds` en la carpeta del proyecto.
+2. Si lo llamás distinto, actualizá **una sola línea** de `index.html`:
 
 ```js
-window.EJS_gameUrl = 'tomodachi.nds';   // â† ponÃ© acÃ¡ el nombre de tu archivo
+window.EJS_gameUrl = 'tomodachi.nds';   // ← poné acá el nombre de tu archivo
 ```
 
 Ejemplos: `'mi-juego.nds'`, `'Zelda - Phantom Hourglass.nds'`.
 
-> Para **subirlo a GitHub** la ROM no se versiona (`.gitignore` la excluye). MirÃ¡ la
-> [secciÃ³n 8](#8-trabajar-con-git) para las tres alternativas al desplegar.
+> Para **subirlo a GitHub** la ROM no se versiona (`.gitignore` la excluye). Mirá la
+> [sección 7](#7-trabajar-con-git) para las tres alternativas al desplegar.
 
-### 1.4 ComprobaciÃ³n rÃ¡pida
+### 1.4 Comprobación rápida
 
 ```powershell
 cd D:\XAMPP\htdocs\tomodachiweb
@@ -77,7 +78,7 @@ Get-ChildItem *.nds
 ```
 
 Y en el navegador, `http://localhost/tomodachiweb/tomodachi.nds` debe devolver el archivo
-binario (no un 404). En la pestaÃ±a *Network* deberÃ­as ver:
+binario (no un 404). En la pestaña *Network* deberías ver:
 
 ```
 GET /tomodachi.nds     200     (67.108.864 bytes, application/octet-stream)
@@ -87,36 +88,36 @@ GET /tomodachi.nds     200     (67.108.864 bytes, application/octet-stream)
 
 ## 2. Puesta en marcha (local con XAMPP)
 
-1. IniciÃ¡ **Apache** desde el *XAMPP Control Panel* (botÃ³n **Start**).
-2. VerificÃ¡ que `tomodachi.nds` estÃ© en la carpeta del proyecto (secciÃ³n 1.2).
-3. AbrÃ­ <http://localhost/tomodachiweb/>.
-4. HacÃ© clic en **â€œINICIAR JUEGOâ€** (ese clic tambiÃ©n habilita el audio, que el navegador
-   bloquea en reproducciÃ³n automÃ¡tica).
+1. Iniciá **Apache** desde el *XAMPP Control Panel* (botón **Start**).
+2. Verificá que `tomodachi.nds` esté en la carpeta del proyecto (sección 1.2).
+3. Abrí <http://localhost/tomodachiweb/>.
+4. Hacé clic en **“INICIAR JUEGO”** (ese clic también habilita el audio, que el navegador
+   bloquea en reproducción automática).
 
-La primera carga tarda un poco mÃ¡s: se descargan el nÃºcleo (1,2 MB) y la ROM (64 MiB).
-DespuÃ©s queda cacheada en el navegador (IndexedDB) y arranca al instante.
+La primera carga tarda un poco más: se descargan el núcleo (1,2 MB) y la ROM (64 MiB).
+Después queda cacheada en el navegador (IndexedDB) y arranca al instante.
 
 ---
 
-## 4. ConfiguraciÃ³n de EmulatorJS
+## 3. Configuración de EmulatorJS
 
 Todo se configura en el bloque `<script>` de `index.html`, **antes** de cargar
 `loader.js`:
 
-| Variable | Valor | QuÃ© hace |
+| Variable | Valor | Qué hace |
 |---|---|---|
 | `EJS_player` | `'#game'` | Elemento donde se monta el emulador |
-| `EJS_core` | `'nds'` | Sistema: melonDS (`desmume`, `desmume2015` tambiÃ©n vÃ¡lidos) |
+| `EJS_core` | `'nds'` | Sistema: melonDS (`desmume`, `desmume2015` también válidos) |
 | `EJS_gameUrl` | `'tomodachi.nds'` | **Ruta de la ROM** (relativa al HTML) |
 | `EJS_pathtodata` | `'https://cdn.emulatorjs.org/stable/data/'` | Origen de los cores y del descompresor |
 | `EJS_controlScheme` | `'nds'` | Botones A/B/X/Y, L/R, SELECT/START |
-| `EJS_language` | `'es-ES'` | Interfaz en espaÃ±ol |
+| `EJS_language` | `'es-ES'` | Interfaz en español |
 | `EJS_gameName` | `'Tomodachi Collection'` | Nombre para save-states y capturas |
-| `EJS_gameID` | `3873` | ID numÃ©rico (separa partidas y cachÃ©s) |
+| `EJS_gameID` | `3873` | ID numérico (separa partidas y cachés) |
 | `EJS_volume` | `0.7` | Volumen inicial |
 | `EJS_fullscreenOnLoaded` | `false` | Pantalla completa al cargar (requiere un gesto del usuario) |
 
-### Capa de pÃ¡gina propia
+### Capa de página propia
 
 `EJS_mouse`, `EJS_touch` y `EJS_fullscreen` **no son opciones nativas de EmulatorJS**
 (su loader solo lee un listado fijo de variables `window.EJS_*`). Por eso el proyecto
@@ -124,9 +125,9 @@ incluye una capa propia que las implementa de verdad:
 
 | Flag | Efecto real |
 |---|---|
-| `EJS_mouse` | `false` â†’ el canvas deja de recibir eventos de puntero |
-| `EJS_touch` | `true` â†’ autodetecta tÃ¡ctil y fuerza el gamepad virtual en pantalla |
-| `EJS_fullscreen` | `true` â†’ botÃ³n â›¶ + pantalla completa automÃ¡tica al primer toque en mÃ³vil |
+| `EJS_mouse` | `false` → el canvas deja de recibir eventos de puntero |
+| `EJS_touch` | `true` → autodetecta táctil y fuerza el gamepad virtual en pantalla |
+| `EJS_fullscreen` | `true` → botón ⛶ + pantalla completa automática al primer toque en móvil |
 
 ---
 
@@ -139,59 +140,59 @@ AddType application/octet-stream .nds   # ROM cruda
 AddType application/wasm .wasm           # WebAssembly (cores auto-alojados)
 ```
 
-AdemÃ¡s desactiva la compresiÃ³n de la ROM y expone cabeceras CORS. Como la ROM se sirve
+Además desactiva la compresión de la ROM y expone cabeceras CORS. Como la ROM se sirve
 desde el **mismo origen** (`http://localhost/tomodachiweb/`), CORS no es necesario para
-jugar: las cabeceras solo hacen falta si movÃ©s la ROM a otro host o puerto.
+jugar: las cabeceras solo hacen falta si movés la ROM a otro host o puerto.
 
-Requisito en `httpd.conf`: `AllowOverride All` para la carpeta `htdocs` y los mÃ³dulos
-`mod_mime` y `mod_headers` cargados (en XAMPP ya lo estÃ¡n de fÃ¡brica).
+Requisito en `httpd.conf`: `AllowOverride All` para la carpeta `htdocs` y los módulos
+`mod_mime` y `mod_headers` cargados (en XAMPP ya lo están de fábrica).
 
 > **En Render el `.htaccess` no se procesa** (no hay Apache, hay CDN). No hace falta:
 > la ROM se pide con `fetch` como `arraybuffer` y su `Content-Type` es irrelevante, y
-> los cores `.wasm` llegan desde el CDN oficial con sus cabeceras correctas. Si aun asÃ­
-> querÃ©s aÃ±adir cabeceras en Render, se hace desde el dashboard
-> (*Settings â†’ Headers*), no con `.htaccess`.
+> los cores `.wasm` llegan desde el CDN oficial con sus cabeceras correctas. Si aun así
+> querés añadir cabeceras en Render, se hace desde el dashboard
+> (*Settings → Headers*), no con `.htaccess`.
 
 ---
 
 ## 5. Controles
 
-| AcciÃ³n | Teclado | Gamepad |
+| Acción | Teclado | Gamepad |
 |---|---|---|
 | D-pad | Flechas | Cruceta |
 | A / B | `X` / `Z` | A / B |
 | X / Y | `S` / `A` | X / Y |
 | START / SELECT | `Enter` / `Shift` | START / SELECT |
 | L / R | `Q` / `E` | Shoulder |
-| Pantalla completa | BotÃ³n â›¶ (esquina superior derecha) | â€” |
+| Pantalla completa | Botón ⛶ (esquina superior derecha) | — |
 
-El mando virtual aparece automÃ¡ticamente en dispositivos tÃ¡ctiles.
+El mando virtual aparece automáticamente en dispositivos táctiles.
 
 ---
 
-## 7. SoluciÃ³n de problemas
+## 6. Solución de problemas
 
-| SÃ­ntoma | Causa y soluciÃ³n |
+| Síntoma | Causa y solución |
 |---|---|
-| 404 al cargar la ROM | El archivo no estÃ¡ en la carpeta del proyecto o el nombre no coincide con `EJS_gameUrl` |
-| `Network Error` durante la carga | La ROM supera el tamaÃ±o o el tiempo de descarga del hosting: probÃ¡ con un `.zip` (38 MB) o servila desde un CDN externo |
-| El juego no arranca | VerificÃ¡ en *Network* que la respuesta sea binaria y no una pÃ¡gina HTML de error del hosting |
-| Pantalla negra | ProbÃ¡ `EJS_core = 'desmume'`; o activÃ¡ la aceleraciÃ³n por hardware en el navegador |
-| `WebAssembly.instantiate(): expected magic word` | Apache sirve `.wasm` como `application/octet-stream`: revisÃ¡ el `AddType application/wasm .wasm` |
-| `Access to fetch â€¦ blocked by CORS` | La ROM debe cargarse por HTTP desde el mismo origen, nunca como `file://`; si estÃ¡ en otro host, ese host debe enviar `Access-Control-Allow-Origin` |
+| 404 al cargar la ROM | El archivo no está en la carpeta del proyecto o el nombre no coincide con `EJS_gameUrl` |
+| `Network Error` durante la carga | La ROM supera el tamaño o el tiempo de descarga del hosting: probá con un `.zip` (38 MB) o servila desde un CDN externo |
+| El juego no arranca | Verificá en *Network* que la respuesta sea binaria y no una página HTML de error del hosting |
+| Pantalla negra | Probá `EJS_core = 'desmume'`; o activá la aceleración por hardware en el navegador |
+| `WebAssembly.instantiate(): expected magic word` | Apache sirve `.wasm` como `application/octet-stream`: revisá el `AddType application/wasm .wasm` |
+| `Access to fetch … blocked by CORS` | La ROM debe cargarse por HTTP desde el mismo origen, nunca como `file://`; si está en otro host, ese host debe enviar `Access-Control-Allow-Origin` |
 | El juego va lento | `EJS_threads = true` + cabeceras `Cross-Origin-Opener-Policy` y `Cross-Origin-Embedder-Policy` |
-| Sin audio | HacÃ© clic dentro del emulador: el navegador requiere un gesto del usuario |
-| En Render no carga la ROM | La ROM debe estar en el **Publish Path** del Static Site (la raÃ­z del repo): ver [secciÃ³n 8.1](#8-trabajar-con-git) |
+| Sin audio | Hacé clic dentro del emulador: el navegador requiere un gesto del usuario |
+| En Render no carga la ROM | La ROM debe estar en el **Publish Path** del Static Site (la raíz del repo): ver [sección 7.1](#7-trabajar-con-git) |
 
 ---
 
 ## 7. Trabajar con Git
 
-La ROM **cruda** (`.nds`, 64 MiB) estÃ¡ fuera del repositorio mediante `.gitignore`:
+La ROM **cruda** (`.nds`, 64 MiB) está fuera del repositorio mediante `.gitignore`:
 
 ```gitignore
 *.nds      # no se versiona
-!*.rar     # un comprimido sÃ­ se puede versionar
+!*.rar     # un comprimido sí se puede versionar
 !*.zip
 ```
 
@@ -207,18 +208,18 @@ git remote add origin https://github.com/<usuario>/<repo>.git
 git push -u origin main
 ```
 
-### 8.1 Â¿Y si quiero desplegar en Render/GitHub Pages?
+### 7.1 ¿Y si quiero desplegar en Render/GitHub Pages?
 
 El sitio desplegado necesita la ROM **dentro del repo**, porque `EJS_gameUrl` es una
 ruta relativa. Hay tres caminos:
 
-| OpciÃ³n | CÃ³mo | Peso en el repo | Notas |
+| Opción | Cómo | Peso en el repo | Notas |
 |---|---|---|---|
-| **A. Forzar la ROM cruda** | `git add -f tomodachi.nds` | 64 MiB | GitHub lo permite (lÃ­mite 100 MB) y Render lo sirve tal cual |
+| **A. Forzar la ROM cruda** | `git add -f tomodachi.nds` | 64 MiB | GitHub lo permite (límite 100 MB) y Render lo sirve tal cual |
 | **B. ROM comprimida** | `tomodachi.zip` + `EJS_gameUrl = 'tomodachi.zip'` | ~38 MB | El navegador la descomprime sola (`extractzip.js` del CDN) |
-| **C. ROM en un host externo** | `EJS_gameUrl = 'https://.../tomodachi.nds'` | 0 | Requiere que ese host envÃ­e `Access-Control-Allow-Origin` |
+| **C. ROM en un host externo** | `EJS_gameUrl = 'https://.../tomodachi.nds'` | 0 | Requiere que ese host envíe `Access-Control-Allow-Origin` |
 
-Para la opciÃ³n **A**:
+Para la opción **A**:
 
 ```powershell
 git add -f tomodachi.nds
@@ -226,7 +227,7 @@ git commit -m "Versiona la ROM para el despliegue"
 git push
 ```
 
-Y si en algÃºn momento la querÃ©s sacar del Ã­ndice (sin borrarla del disco):
+Y si en algún momento la querés sacar del índice (sin borrarla del disco):
 
 ```powershell
 git rm --cached tomodachi.nds
@@ -237,11 +238,11 @@ git commit -m "Deja de versionar la ROM cruda"
 
 ## 8. Desplegar en hosting compartido (InfinityFree)
 
-### 8.1 El problema tÃ­pico: "Error de Red"
+### 8.1 El problema típico: "Error de Red"
 
-En InfinityFree el emulador suele mostrar **â€œError de Redâ€** (`Network Error`). No es un
-fallo del emulador: en el cÃ³digo de EmulatorJS ese mensaje aparece **Ãºnicamente** cuando
-la peticiÃ³n de la ROM falla:
+En InfinityFree el emulador suele mostrar **“Error de Red”** (`Network Error`). No es un
+fallo del emulador: en el código de EmulatorJS ese mensaje aparece **únicamente** cuando
+la petición de la ROM falla:
 
 ```js
 // emulator.min.js
@@ -249,21 +250,21 @@ const t = await this.downloadFile(this.config.gameUrl, ..., {responseType:"array
 if (-1 === t) return void this.startGameError(this.localization("Network Error"));
 ```
 
-`downloadFile` devuelve `-1` si la respuesta es **4xx/5xx** o si la conexiÃ³n falla. Si
-fallara el nÃºcleo, el mensaje serÃ­a otro (â€œError downloading core (melonds-wasm.data)â€).
+`downloadFile` devuelve `-1` si la respuesta es **4xx/5xx** o si la conexión falla. Si
+fallara el núcleo, el mensaje sería otro (“Error downloading core (melonds-wasm.data)”).
 
 Motivos habituales en InfinityFree:
 
 | Causa | Detalle |
 |---|---|
-| **La ROM no llegÃ³ al servidor** | El plan gratuito limita el tamaÃ±o de cada archivo subido (~10 MB) y `tomodachi.nds` pesa **64 MiB** â†’ 404 |
-| **nginx bloquea el binario** | InfinityFree sirve detrÃ¡s de **nginx** (`Server: nginx`), que puede interceptar la descarga directa de estÃ¡ticos â†’ 403 o pÃ¡gina HTML |
+| **La ROM no llegó al servidor** | El plan gratuito limita el tamaño de cada archivo subido (~10 MB) y `tomodachi.nds` pesa **64 MiB** → 404 |
+| **nginx bloquea el binario** | InfinityFree sirve detrás de **nginx** (`Server: nginx`), que puede interceptar la descarga directa de estáticos → 403 o página HTML |
 | **Tiempo de espera** | Transferir 64 MiB por un hosting compartido puede cortarse |
 
-### 9.2 CÃ³mo diagnosticarlo en 20 segundos
+### 8.2 Cómo diagnosticarlo en 20 segundos
 
-1. AbrÃ­ en el navegador: `https://TU-SITIO/tomodachi.nds`
-2. O usÃ¡ PowerShell (reemplazÃ¡ la URL):
+1. Abrí en el navegador: `https://TU-SITIO/tomodachi.nds`
+2. O usá PowerShell (reemplazá la URL):
 
 ```powershell
 try {
@@ -274,11 +275,11 @@ try {
 }
 ```
 
-| Resultado | SoluciÃ³n |
+| Resultado | Solución |
 |---|---|
-| `404` | La ROM no estÃ¡ en el servidor â†’ opciÃ³n **C** (hosting externo) |
-| `403` o devuelve HTML | nginx bloquea el binario â†’ opciÃ³n **A** (`rom.php`) |
-| `200` con `Content-Length: 67108864` y `application/octet-stream` | Todo bien â†’ recargÃ¡ con **Ctrl+F5** (cachÃ© del navegador) |
+| `404` | La ROM no está en el servidor → opción **C** (hosting externo) |
+| `403` o devuelve HTML | nginx bloquea el binario → opción **A** (`rom.php`) |
+| `200` con `Content-Length: 67108864` y `application/octet-stream` | Todo bien → recargá con **Ctrl+F5** (caché del navegador) |
 
 ### 8.3 Opciones de despliegue
 
@@ -292,29 +293,29 @@ esquivando el bloqueo de nginx y el `Content-Type` incorrecto.
 window.EJS_gameUrl = 'rom.php';
 ```
 
-SubÃ­ `rom.php` a la misma carpeta que `index.html` y la ROM al servidor (por FTP con
+Subí `rom.php` a la misma carpeta que `index.html` y la ROM al servidor (por FTP con
 FileZilla, que permite subir archivos grandes en varios segmentos).
 
 #### B) Hosting externo de la ROM (si no se puede subir el `.nds`)
 
-`raw.githubusercontent.com` envÃ­a `Access-Control-Allow-Origin: *`, asÃ­ que sirve:
+`raw.githubusercontent.com` envía `Access-Control-Allow-Origin: *`, así que sirve:
 
 ```js
 window.EJS_gameUrl = 'https://raw.githubusercontent.com/medransfinformatica/tomodachiweb/main/tomodachi.nds';
 ```
 
-(subÃ­ la ROM al repo con `git add -f tomodachi.nds`).
+(subí la ROM al repo con `git add -f tomodachi.nds`).
 
 #### C) Render (recomendado si la ROM es grande)
 
-Render no tiene lÃ­mite de tamaÃ±o por archivo y sirve el repo completo. Deploy del repo
-como **Static Site** (Build Command vacÃ­o, Publish Path `/`) y apuntÃ¡ `EJS_gameUrl` a
+Render no tiene límite de tamaño por archivo y sirve el repo completo. Deploy del repo
+como **Static Site** (Build Command vacío, Publish Path `/`) y apuntá `EJS_gameUrl` a
 `https://TU-SITIO.onrender.com/tomodachi.nds`.
 
-### 9.4 Fallback automÃ¡tico (ya implementado)
+### 8.4 Fallback automático (ya implementado)
 
 `index.html` prueba las URLs de la ROM con un `HEAD` antes de iniciar y usa la primera
-que responda `200`, asÃ­ el emulador no muere si la principal no estÃ¡ disponible:
+que responda `200`, así el emulador no muere si la principal no está disponible:
 
 ```js
 window.EJS_romUrls = [
@@ -324,38 +325,38 @@ window.EJS_romUrls = [
 ];
 ```
 
-En la consola del navegador se ve la decisiÃ³n:
+En la consola del navegador se ve la decisión:
 
 ```
 [ROM] tomodachi.nds -> HTTP 404
 [ROM] "tomodachi.nds" no responde. Uso el fallback: rom.php
 ```
 
-> âš ï¸ `EJS_romUrls` estÃ¡ pensado para **tÃº y tu equipo**. Si publicÃ¡s el sitio con el
-> repo pÃºblico, recordÃ¡ que la URL de GitHub expone la ROM a cualquiera que la abra.
+> ⚠️ `EJS_romUrls` está pensado para **tú y tu equipo**. Si publicás el sitio con el
+> repo público, recordá que la URL de GitHub expone la ROM a cualquiera que la abra.
 
 ---
 
 ## 9. Desplegar en Render (Static Site)
 
-1. SubÃ­ el repo a GitHub (`git push -u origin main`).
-2. En <https://dashboard.render.com/> â†’ **New â†’ Static Site**.
-3. **Connect** con GitHub y elegÃ­ el repositorio `tomodachiweb`.
-4. ConfiguraciÃ³n:
+1. Subí el repo a GitHub (`git push -u origin main`).
+2. En <https://dashboard.render.com/> → **New → Static Site**.
+3. **Connect** con GitHub y elegí el repositorio `tomodachiweb`.
+4. Configuración:
    - **Branch**: `main`
-   - **Build Command**: *(vacÃ­o â€” no hace falta compilar nada)*
+   - **Build Command**: *(vacío — no hace falta compilar nada)*
    - **Publish Path**: `/` (o `.`)
    - **Environment**: `Production`
 5. **Create Static Site**. Render despliega y te da una URL `https://<nombre>.onrender.com`.
-6. Cada `git push` a `main` redespliega automÃ¡ticamente.
+6. Cada `git push` a `main` redespliega automáticamente.
 
 Notas:
 
 - El `.htaccess` se sube al repo pero **Render lo ignora** (no usa Apache); no molesta.
-- El sitio es estÃ¡tico: `index.html` en la raÃ­z se sirve como `/`.
-- El nÃºcleo y el descompresor siguen viniendo del CDN de EmulatorJS, asÃ­ que no hace
-  falta subir nada mÃ¡s.
-- PodÃ©s agregar cabeceras HTTP desde *Settings â†’ Headers* en el dashboard.
+- El sitio es estático: `index.html` en la raíz se sirve como `/`.
+- El núcleo y el descompresor siguen viniendo del CDN de EmulatorJS, así que no hace
+  falta subir nada más.
+- Podés agregar cabeceras HTTP desde *Settings → Headers* en el dashboard.
 
 ---
 
@@ -364,8 +365,8 @@ Notas:
 `Tomodachi Collection` es una obra de Nintendo / Intelligent Systems. Este repositorio
 publica el **frontend del emulador** (HTML, CSS, `.htaccess`) y el archivo de ROM
 **comprimido** que el usuario aporta al clonarlo. Cada usuario es responsable de su
-copia y de cumplir la legislaciÃ³n de su paÃ­s; publicar este repositorio no concede
-ningÃºn derecho sobre la obra original.
+copia y de cumplir la legislación de su país; publicar este repositorio no concede
+ningún derecho sobre la obra original.
 
 Este proyecto no se asocia ni responde por Nintendo, Intelligent Systems, EmulatorJS
 ni RetroArch.

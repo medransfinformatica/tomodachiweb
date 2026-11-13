@@ -268,6 +268,20 @@
      funcionan: en ese caso el navegador las descomprime solo. */
   window.EJS_gameUrl = 'tomodachi.nds';
 
+  /* ------------------------------------------------------------
+     URLs candidatas de la ROM, en orden de preferencia.
+     Se prueban con un HEAD antes de iniciar y se usa la primera
+     que responda 200. Sirve para que el emulador no muera con
+     "Network Error" si el archivo no está en el hosting actual
+     (típico en hosting compartido con límites de subida).
+     La 1ª opción es la de EJS_gameUrl; las siguientes son fallbacks.
+     ------------------------------------------------------------ */
+  window.EJS_romUrls = [
+    'tomodachi.nds',                                  // 1) archivo local en el mismo server
+    'rom.php',                                        // 2) proxy PHP (misma carpeta)
+    'https://raw.githubusercontent.com/medransfinformatica/tomodachiweb/main/tomodachi.nds' // 3) repo GitHub
+  ];
+
   /* Cores y assets desde el CDN oficial */
   window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
 
@@ -499,12 +513,106 @@
       lastTouch = now;
     }, { passive:false });
 
+    /* ================================================================
+       RESCATE DE LA ROM
+       ------------------------------------------------------------
+       En hosting compartido (InfinityFree) la ROM puede no estar en el
+       servidor (404 por límite de subida) o estar bloqueada por nginx.
+       En esos casos EmulatorJS aborta con "Network Error".
+       Antes de arrancar probamos cada URL con un HEAD y usamos la
+       primera que responda 200.
+       ================================================================ */
+
+    /* Comprueba si una URL sirve el archivo (HEAD y, si el server no
+       soporta HEAD, un GET parcial de 1 byte). */
+    async function urlAlive(url){
+      try {
+        var res = await fetch(url, { method:'HEAD', cache:'no-store' });
+        if (res.ok) return true;
+        /* Algunos servidores no implementan HEAD (405/501) */
+        if (res.status === 405 || res.status === 501){
+          var r2 = await fetch(url, { headers:{ Range:'bytes=0-0' }, cache:'no-store' });
+          return r2.ok || r2.status === 206;
+        }
+        return false;
+      } catch(e){
+        return false;
+      }
+    }
+
+    /* Devuelve la lista de URLs a probar: primero la principal
+       (EJS_gameUrl) y después los fallbacks declarados. */
+    function romUrlList(){
+      var emu = window.EJS_emulator;
+      var primary = (emu && emu.config && emu.config.gameUrl) || window.EJS_gameUrl;
+      var list = [];
+      if (primary) list.push(primary);
+      (window.EJS_romUrls || []).forEach(function(u){
+        if (u && list.indexOf(u) === -1) list.push(u);
+      });
+      return list;
+    }
+
+    /* Prueba las URLs y deja config.gameUrl apuntando a la que funciona. */
+    async function pickWorkingRomUrl(){
+      var emu = window.EJS_emulator;
+      if (!emu || !emu.config) return null;
+      var list = romUrlList();
+      for (var i = 0; i < list.length; i++){
+        var url = list[i];
+        if (await urlAlive(url)){
+          if (url !== emu.config.gameUrl){
+            console.warn('[ROM] "' + emu.config.gameUrl + '" no responde. Uso el fallback: ' + url);
+            emu.config.gameUrl = url;
+          } else {
+            console.log('[ROM] OK: ' + url);
+          }
+          return url;
+        }
+        console.warn('[ROM] ' + url + ' -> no disponible');
+      }
+      console.error('[ROM] Ninguna URL de EJS_romUrls respondió. Revisá EJS_gameUrl.');
+      return null;
+    }
+
+    /* ------------------------------------------------------------
+       Interceptamos el clic en "INICIAR JUEGO" para resolver la URL
+       de la ROM ANTES de que el emulador intente descargarla.
+       El listener va en `document` con capture=true: así se ejecuta en
+       la fase de captura (antes de llegar al botón). Si lo pusiéramos
+       sobre el botón, se ejecutaría en orden de registro y no nos
+       garantizaría ir antes que el handler de EmulatorJS.
+       ------------------------------------------------------------ */
+    var startHooked = false;
+    function hookStartButton(){
+      if (startHooked) return;
+      startHooked = true;
+      document.addEventListener('click', function(ev){
+        var t = ev.target;
+        var btn = (t && t.closest) ? t.closest('.ejs_start_button') : null;
+        if (!btn) return;
+        if (btn.__romAllow) return;          /* segunda pasada: que arranque */
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation();
+        var proceed = function(){
+          btn.__romAllow = true;
+          btn.click();                       /* re-dispara: ahora sí arranca */
+          setTimeout(function(){ btn.__romAllow = false; }, 2000);
+        };
+        /* Si el chequeo fallara por lo que sea, el juego arranca igual */
+        pickWorkingRomUrl().then(proceed, proceed);
+      }, true);
+    }
+
     /* ---------- Callbacks de EmulatorJS ---------- */
     window.EJS_ready = function(){
       console.log('[EmulatorJS] listo');
       enableTouchControls();
       syncFullscreenUI();
       applyScreenLayout();
+      hookStartButton();
+      pickWorkingRomUrl();   /* se ejecuta antes de que el usuario toque "Iniciar" */
     };
     window.EJS_onGameStart = function(){
       console.log('[EmulatorJS] juego iniciado');
@@ -528,7 +636,9 @@
       isFullscreen: fsElement,
       isTouchDevice: isTouchDevice,
       enableTouchControls: enableTouchControls,
-      applyScreenLayout: applyScreenLayout
+      applyScreenLayout: applyScreenLayout,
+      pickWorkingRomUrl: pickWorkingRomUrl,
+      romUrlList: romUrlList
     };
   })();
 </script>
