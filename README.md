@@ -131,7 +131,7 @@ incluye una capa propia que las implementa de verdad:
 
 ---
 
-## 4. `.htaccess` (solo XAMPP/Apache)
+## 4. `.htaccess` (portable: XAMPP / Apache / InfinityFree)
 
 Apache no conoce `.nds` ni `.wasm` por defecto. El `.htaccess` del proyecto los registra:
 
@@ -175,7 +175,7 @@ El mando virtual aparece automáticamente en dispositivos táctiles.
 | Síntoma | Causa y solución |
 |---|---|
 | 404 al cargar la ROM | El archivo no está en la carpeta del proyecto o el nombre no coincide con `EJS_gameUrl` |
-| `Network Error` durante la carga | La ROM supera el tamaño o el tiempo de descarga del hosting: probá con un `.zip` (38 MB) o servila desde un CDN externo |
+| `Network Error` durante la carga | La ROM no llegó al servidor o nginx la bloquea: probá `rom.php`, un `.zip` (38 MB) o un CDN externo — ver [sección 8](#8-desplegar-en-hosting-compartido-infinityfree) |
 | El juego no arranca | Verificá en *Network* que la respuesta sea binaria y no una página HTML de error del hosting |
 | Pantalla negra | Probá `EJS_core = 'desmume'`; o activá la aceleración por hardware en el navegador |
 | `WebAssembly.instantiate(): expected magic word` | Apache sirve `.wasm` como `application/octet-stream`: revisá el `AddType application/wasm .wasm` |
@@ -363,8 +363,8 @@ Notas:
 ## 10. Aviso legal
 
 `Tomodachi Collection` es una obra de Nintendo / Intelligent Systems. Este repositorio
-publica el **frontend del emulador** (HTML, CSS, `.htaccess`) y el archivo de ROM
-**comprimido** que el usuario aporta al clonarlo. Cada usuario es responsable de su
+publica el **frontend del emulador** (HTML, CSS, `.htaccess`, `rom.php`) y el archivo de ROM
+que el usuario aporta al clonarlo. Cada usuario es responsable de su
 copia y de cumplir la legislación de su país; publicar este repositorio no concede
 ningún derecho sobre la obra original.
 
