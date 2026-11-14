@@ -298,16 +298,33 @@ try {
 
 #### A) Proxy PHP `rom.php` (incluido en el repo)
 
-`rom.php` lee la ROM desde disco y la entrega con las cabeceras correctas
+`rom.php` entrega la ROM con las cabeceras correctas
 (`application/octet-stream`, `Content-Length`, `Access-Control-Allow-Origin: *`),
-esquivando el bloqueo de nginx y el `Content-Type` incorrecto.
+esquivando el bloqueo de nginx y el `Content-Type` incorrecto. Si la ROM está en
+disco la sirve desde ahí; si no, la reenvía en streaming desde el enlace directo
+de Dropbox (`REMOTE_ROM_URL`, configurable arriba del script).
 
 ```js
 window.EJS_gameUrl = 'rom.php';
 ```
 
-Subí `rom.php` a la misma carpeta que `index.html` y la ROM al servidor (por FTP con
-FileZilla, que permite subir archivos grandes en varios segmentos).
+Subí `rom.php` a la misma carpeta que `index.html`. La ROM puede estar en disco
+(por FTP con FileZilla, que permite subir archivos grandes en varios segmentos)
+o, si preferís no subirla, dejar que `rom.php` la tome desde Dropbox.
+
+#### A.1) Dropbox (enlace directo, ya implementado)
+
+La ROM se sirve directamente desde Dropbox con `dl=1`. Ese enlace responde con
+`Access-Control-Allow-Origin: *` y `Accept-Ranges: bytes`, así que el navegador
+la descarga sin problemas de CORS y sin pesar en el servidor de Render:
+
+```js
+window.EJS_gameUrl = 'https://www.dropbox.com/scl/fi/zm2jzelsooa13rsppv1e8/tomodachi.nds?rlkey=a3c0ercxgosz7o8d8z37o7w4h&st=6ubh3tme&dl=1';
+```
+
+Si el enlace rota (Dropbox a veces regenera `st`/`rlkey`), regenerá el enlace de
+descarga en Dropbox y actualizá `EJS_gameUrl`, `EJS_romUrls` (index.html) y
+`REMOTE_ROM_URL` (rom.php).
 
 #### B) Hosting externo de la ROM (si no se puede subir el `.nds`)
 
@@ -332,9 +349,10 @@ que responda `200`, así el emulador no muere si la principal no está disponibl
 
 ```js
 window.EJS_romUrls = [
-  'tomodachi.nds',      // 1) archivo local
-  'rom.php',            // 2) proxy PHP
-  'https://raw.githubusercontent.com/.../tomodachi.nds'  // 3) repo GitHub
+  'https://www.dropbox.com/scl/fi/zm2jzelsooa13rsppv1e8/tomodachi.nds?rlkey=a3c0ercxgosz7o8d8z37o7w4h&st=6ubh3tme&dl=1', // 1) Dropbox
+  'rom.php',            // 2) proxy PHP (reenvía desde Dropbox o disco)
+  'tomodachi.nds',      // 3) archivo local
+  'https://raw.githubusercontent.com/.../tomodachi.nds'  // 4) repo GitHub
 ];
 ```
 

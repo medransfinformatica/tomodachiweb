@@ -261,12 +261,13 @@
   /* Sistema / core: 'nds' = melonDS (alternativas: 'desmume', 'desmume2015') */
   window.EJS_core = 'nds';
 
-  /* ROM local servida por el servidor web (mismo origen => sin CORS).
-     Ahora la ROM va CRUDA (sin comprimir): EmulatorJS la carga tal cual
-     con fetch/XHR y la pasa directo al núcleo, sin descomprimir en el
-     navegador. Extensiones comprimidas (.zip / .rar / .7z) también
-     funcionan: en ese caso el navegador las descomprime solo. */
-  window.EJS_gameUrl = 'tomodachi.nds';
+  /* ROM servida desde Dropbox (descarga directa, dl=1).
+     El enlace directo responde con CORS habilitado
+     (Access-Control-Allow-Origin: *) y Accept-Ranges, así que el
+     navegador la descarga sin problemas y sin depender de un archivo
+     pesado en el servidor de Render. Si Dropbox falla, el código de
+     abajo prueba los fallbacks de EJS_romUrls. */
+  window.EJS_gameUrl = 'https://www.dropbox.com/scl/fi/zm2jzelsooa13rsppv1e8/tomodachi.nds?rlkey=a3c0ercxgosz7o8d8z37o7w4h&st=6ubh3tme&dl=1';
 
   /* ------------------------------------------------------------
      URLs candidatas de la ROM, en orden de preferencia.
@@ -277,9 +278,10 @@
      La 1ª opción es la de EJS_gameUrl; las siguientes son fallbacks.
      ------------------------------------------------------------ */
   window.EJS_romUrls = [
-    'tomodachi.nds',                                  // 1) archivo local en el mismo server
-    'rom.php',                                        // 2) proxy PHP (misma carpeta)
-    'https://raw.githubusercontent.com/medransfinformatica/tomodachiweb/main/tomodachi.nds' // 3) repo GitHub
+    'https://www.dropbox.com/scl/fi/zm2jzelsooa13rsppv1e8/tomodachi.nds?rlkey=a3c0ercxgosz7o8d8z37o7w4h&st=6ubh3tme&dl=1', // 1) Dropbox (descarga directa)
+    'rom.php',                                        // 2) proxy PHP (misma carpeta, reenvía la ROM desde Dropbox o disco)
+    'tomodachi.nds',                                  // 3) archivo local en el mismo server (si existe)
+    'https://raw.githubusercontent.com/medransfinformatica/tomodachiweb/main/tomodachi.nds' // 4) repo GitHub
   ];
 
   /* Cores y assets desde el CDN oficial */
